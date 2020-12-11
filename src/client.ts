@@ -98,6 +98,13 @@ export class Client {
     });
   }
 
+  async getPoolConnection(): Promise<PoolConnection> {
+    if (!this._pool) {
+      throw new Error("Failed to get connection: unconnected");
+    }
+    return await this._pool.pop();
+  }
+
   async useConnection<T>(fn: (conn: Connection) => Promise<T>) {
     if (!this._pool) {
       throw new Error("Unconnected");

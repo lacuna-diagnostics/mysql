@@ -1,5 +1,5 @@
 import { DeferredStack } from "./deferred.ts";
-import { Connection } from "./connection.ts";
+import { Connection, ConnectionState } from "./connection.ts";
 import { log } from "./logger.ts";
 
 /** @ignore */
@@ -8,6 +8,44 @@ export class PoolConnection extends Connection {
 
   private _idleTimer?: number = undefined;
   private _idle = false;
+
+  // TODO
+  async beginTransaction() {
+    await this.execute('BEGIN');
+  };
+
+  // TODO
+  async commitTransaction() {
+    try {
+      await this.execute('COMMIT');
+    } catch (error) {
+      if (this.state == ConnectionState.CONNECTED) {
+        await this.execute("ROLLBACK");
+      }
+      throw error;
+    } finally {
+      if (this.state == ConnectionState.CLOSED) {
+        this.removeFromPool();
+      } else {
+        this.returnToPool();
+      }
+    }
+  };
+
+  // TODO
+  async rollbackTransaction() {
+    try {
+      await this.execute("ROLLBACK");
+    } catch (error) {
+      throw error;
+    } finally {
+      if (this.state == ConnectionState.CLOSED) {
+        this.removeFromPool();
+      } else {
+        this.returnToPool();
+      }
+    }
+  };
 
   /**
    * Should be called by the pool.
